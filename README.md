@@ -1,143 +1,80 @@
-# 메타데이터 기반 추천 API (MVP)
+# 🍱 TasteMate (밥친구)
+> **AI 기반 맞춤형 식단 관리 및 맛집 추천 서비스**
 
-**현재 구현 플로우**
+TasteMate는 사용자의 신체 정보, 식습관, 현재 위치를 결합하여 최적의 영양 분석과 맛집 추천을 제공하는 스마트 식단 가이드 애플리케이션입니다.
 
-```
-context (더미) + candidates (더미 20개)
-    → 룰 랭커 (app/ranker.py)
-    → top_k
-    → LLM reason 생성
-    → JSON 반환 (selected_menu_id, reason_one_liner, reason_tags)
-```
+---
 
-**각 코드 역할·동작 순서:** [docs/코드_설명.md](docs/코드_설명.md)
+## 🚀 주요 기능 (Core Features)
 
-## 요구 사항
+### 1. 지능형 온보딩 (Smart Onboarding)
+*   사용자의 나이, 성별, 키, 체중, 활동량, 건강 목표 수집.
+*   Harris-Benedict 공식을 활용한 기초대사량(BMR) 및 일일 권장 칼로리(TDEE) 자동 계산.
+*   식사 취향(기호품/기피 음식) 및 식사 시간 설정.
 
-- Python 3.10+
-- (선택) `OPENAI_API_KEY` — 없으면 모든 요청에 fallback 응답(selected=top_k[0], 템플릿 사유) 반환
+### 2. AI 영양 분석 및 대시보드
+*   일일 목표 칼로리 대비 실시간 섭취량 시각화.
+*   식사 기록(아침, 점심, 저녁, 간식)별 상세 영양소 추적.
+*   사용자 데이터 기반 맞춤형 건강 인사이트 제공.
 
-## 설치
+### 3. 맞춤형 맛집 추천
+*   사용자의 선호 카테고리 및 위치 기반 실시간 식당 추천.
+*   AI 챗봇을 통한 메뉴 결정 및 식단 고민 상담.
 
+---
+
+## 🛠 기술 스택 (Tech Stack)
+
+### **Frontend**
+*   **Framework**: React 18 (Vite)
+*   **UI/UX**: Tailwind CSS, Lucide Icons, Shadcn UI
+*   **State/API**: Axios, React Hooks
+
+### **Backend**
+*   **Framework**: FastAPI (Python 3.11)
+*   **Database/Auth**: Supabase (PostgreSQL)
+*   **AI Engine**: OpenAI GPT-4o / Google Gemini
+*   **Data Analysis**: Pandas, Scikit-learn (추천 엔진 로직)
+
+---
+
+## 🐳 개발 환경 및 실행 방법 (Docker)
+
+본 프로젝트는 서비스 간의 의존성 해결과 일관된 실행 환경을 위해 Docker를 사용합니다.
+
+### 1. 사전 준비 (Pre-requisites)
+*   Docker 및 Docker Desktop 설치
+*   `backend/.env` 및 `frontend/.env` 파일 설정 완료
+
+### 2. 가동 방법
+터미널에서 프로젝트 루트 디렉토리로 이동한 후 아래 명령어를 입력합니다.
 ```bash
-cd ai_plus
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+docker-compose up --build
 ```
 
-## 환경 변수 (선택)
+### 3. 접속 정보
+*   **Frontend**: [http://localhost:3000](http://localhost:3000)
+*   **Backend API**: [http://localhost:8000](http://localhost:8000)
+*   **Backend Health Check**: [http://localhost:8000/health](http://localhost:8000/health)
 
-| 변수 | 설명 |
-|------|------|
-| `OPENAI_API_KEY` | OpenAI API 키. 없으면 fallback 사용 |
-| `OPENAI_BASE_URL` | API 베이스 URL (Azure/로컬 등) |
-| `LLM_MODEL` | 모델명 (기본: `gpt-4o-mini`) |
-| `LLM_TEMPERATURE` | 생성 온도 (재현성 높이려면 `0`) |
+---
 
-`.env` 파일은 저장소에 포함되지 않습니다. 프로젝트 루트에 `.env`를 만들고 `OPENAI_API_KEY` 등을 넣으면 서버가 로드합니다. 예시는 `.env.example`을 참고하세요.
+## 📂 프로젝트 구조 (Architecture)
 
-## 실행 방법
-
-### 1. 서버 기동
-
-```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```text
+taste_mate/
+├── backend/            # FastAPI 백엔드 (API, 추천 엔진, DB 연동)
+├── frontend/           # React 프런트엔드 (Vite, UI 컴포넌트)
+├── docs/               # 상세 기술 및 요약 보고서 문서함
+│   ├── 05_Onboarding_Expansion_Report.md
+│   ├── 06_API_Integration_DB_Persistence_Report.md
+│   └── 07_Docker_Setup_Guide.md
+└── docker-compose.yml  # 하이브리드 서비스 통합 관리 설정
 ```
 
-코드 수정 후에는 서버를 재시작하거나 `--reload` 사용 시 자동 반영됩니다.
+---
 
-- API: `http://127.0.0.1:8000`
-- 프론트: `http://127.0.0.1:8000/` → 케이스 선택 후 "추천 받기"
-- `GET /health`, `POST /v1/recommend` (context + candidates → 랭커 → LLM → JSON)
-
-### 2. 테스트 러너 실행
-
-서버가 떠 있는 상태에서:
-
-```bash
-python scripts/run_eval.py
-```
-
-기본으로 `http://127.0.0.1:8000`을 호출합니다. 다른 URL은 `--base-url`로 지정:
-
-```bash
-python scripts/run_eval.py --base-url http://localhost:8000
-```
-
-결과는 다음에 저장됩니다.
-
-- `output/eval_results.jsonl` — 호출별 전체 결과(검증 필드 포함)
-- `output/eval_results.csv` — 요약 컬럼만 CSV
-
-콘솔에는 케이스별 통과 여부와 마지막 요약(전체 통과 수, selected in top_k, 사유 길이, context 키워드 반영 수)이 출력됩니다.
-
-### 3. 재현성 검증 (선택)
-
-동일 케이스로 N회 호출해 selected_menu_id / reason_one_liner 일치율을 확인:
-
-```bash
-python scripts/run_reproducibility.py -n 5
-```
-
-- `-n 5`: 케이스당 5회 호출 (기본 5)
-- `-c 1`: Case 1만 실행
-- `--out output/reproducibility.json`: 결과 저장
-
-재현성을 높이려면 `.env`에 `LLM_TEMPERATURE=0` 설정 후 서버 재시작.
-
-## API 스펙
-
-### `POST /v1/recommend`
-
-- **Request:** `{ "context": { ... }, "candidates": [ ... ], "k": 5 }` (k 기본 5, 최대 20)
-- **Response:** `{ "selected_menu_id": int, "reason_one_liner": str, "reason_tags": list[str], "top_k_used": list[int] }`
-
-context 예시: `meal_slot`, `hunger_level`, `mood`, `company`, `effort_level`, `budget_range`, `recent_meals`, `weather`(선택).  
-candidates: `menu_id`, `menu_name`, `category`, `tags`, `price_est`, `prep_time_est`.
-
-## 프로젝트 구조
-
-```
-ai_plus/
-├── app/
-│   ├── main.py          # FastAPI 앱 (/v1/recommend, /health, 프론트·데이터용 GET)
-│   ├── models.py        # Pydantic 요청/응답 모델
-│   ├── llm.py           # LLM 호출 + 실패 시 fallback
-│   ├── ranker.py        # 룰 기반 top-k 랭커 (context + candidates → top_k)
-│   ├── logging_config.py # context 요약 + output 로그
-│   └── __init__.py
-├── data/
-│   ├── candidates.json  # 메뉴 후보 20개
-│   └── test_cases.json  # 테스트용 context 10개
-├── prompts/
-│   └── reason.txt       # LLM용 프롬프트 템플릿
-├── frontend/
-│   └── index.html       # 간이 프론트 (테스트 케이스 선택 → 추천 결과 확인)
-├── scripts/
-│   ├── run_eval.py      # 테스트 러너 (10케이스 호출 + 검증)
-│   └── run_reproducibility.py # 동일 케이스 N회 호출 재현성 검증
-├── output/              # run_eval / run_reproducibility 결과 (gitignore)
-├── logs/                # reason_calls.jsonl (gitignore)
-├── requirements.txt
-├── .env.example         # 환경 변수 예시 (실제 키는 .env에, .env는 공유 금지)
-└── README.md
-```
-
-## 테스트 러너 검증 항목
-
-- `selected_menu_id`가 `top_k` 안에 있는지
-- `reason_one_liner` 길이 25~45자
-- `reason_one_liner`에 context 키워드(meal_slot, mood, company, effort_level 중) 2개 이상 포함 여부
-
-## Fallback
-
-LLM 호출 실패 또는 `OPENAI_API_KEY` 미설정 시:
-
-- `selected_menu_id`: `top_k[0]`
-- `reason_one_liner`: `"선택한 메뉴가 현재 상황에 잘 맞습니다."`
-- `reason_tags`: `["fallback"]`
-
-## 로그
-
-`POST /v1/recommend` 호출 시 `logs/reason_calls.jsonl`에 한 줄씩 추가 (context 요약, top_k, 결과).
+## 📄 라이선스 및 문서
+자세한 개발 내역은 `docs/` 폴더 내의 각 리포트를 참조하세요.
+*   [Docker 상세 가이드](docs/07_Docker_Setup_Guide.md)
+*   [API 연동 및 DB 영속화 리포트](docs/06_API_Integration_DB_Persistence_Report.md)
